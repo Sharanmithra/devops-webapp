@@ -2,15 +2,34 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Display Build Message
-        run: echo "Build Success!"
+      - name: Validate HTML
+        run: |
+          test -f index.html
+
+      - name: Slack Notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            MESSAGE="✅ CI Pipeline succeeded for devops-webapp"
+          else
+            MESSAGE="❌ CI Pipeline failed for devops-webapp"
+          fi
+
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            --data "{\"text\":\"$MESSAGE\"}" \
+            "${{ secrets.SLACK_WEBHOOK_URL }}"
